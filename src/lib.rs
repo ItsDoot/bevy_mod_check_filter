@@ -25,7 +25,11 @@ impl<T: Component, P: Predicate<T>> Predicate<T> for Not<T, P> {
     }
 }
 
+/// Query filter for checking if the component `T` is coercable as `true`.
 pub type IsTrue<T> = Check<T, Is<true>>;
+
+/// Query filter for checking if the component `T` is coercable as `false`.
+pub type IsFalse<T> = Check<T, Is<false>>;
 
 /// A [`Predicate`] that checks if the provided `T`, coerced into a `bool`, equals the given `VALUE`.
 pub struct Is<const VALUE: bool>;
