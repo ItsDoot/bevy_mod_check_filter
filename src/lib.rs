@@ -1,3 +1,10 @@
+//! [Component]: bevy_ecs::component::Component
+//! [Query]: bevy_ecs::system::Query
+//! [Check]: crate::Check
+//! [Is]: crate::Is
+//! [IsTrue]: crate::IsTrue
+#![doc = include_str!("../README.md")]
+
 use std::{marker::PhantomData, ops::Deref};
 
 use bevy_ecs::component::Component;
