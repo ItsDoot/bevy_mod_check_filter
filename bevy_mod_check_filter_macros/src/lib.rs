@@ -13,9 +13,14 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let expanded: TokenStream = if let syn::Data::Enum(e) = input.data {
         e.variants
             .into_iter()
-            .map(|v| v.ident)
             .map(|v| {
-                let name = Ident::new(&format!("Is{v}"), v.span());
+                let ident = v.ident;
+                let name = Ident::new(&format!("Is{ident}"), ident.span());
+                let m = match v.fields {
+                    syn::Fields::Unit => quote! { #enum_name::#ident },
+                    _ => quote! { #enum_name::#ident { .. } },
+                };
+
                 quote! {
                     #vis struct #name;
 
@@ -24,7 +29,10 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         T: std::ops::Deref<Target = #enum_name>,
                     {
                         fn test(test: &T) -> bool {
-                            matches!(**test, #enum_name::#v)
+                            match **test {
+                              #m => true,
+                              _ => false,
+                            }
                         }
                     }
                 }

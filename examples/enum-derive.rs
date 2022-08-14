@@ -8,8 +8,8 @@ use std::ops::Deref;
 #[derive(Component, IsVariant)]
 enum EnemyState {
     Walking,
-    Running,
-    Flying,
+    Running(bool, f32),
+    Flying { max_height: f32 },
 }
 
 impl Deref for EnemyState {
