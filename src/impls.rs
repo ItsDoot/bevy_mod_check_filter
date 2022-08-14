@@ -13,26 +13,39 @@ use bevy_ecs::{
 };
 use bevy_ptr::{ThinSlicePtr, UnsafeCellDeref};
 
-use crate::{Check, Predicate};
+use crate::{Check, Checkable, Predicate};
 
 // SAFETY: `ROQueryFetch<Self>` is the same as `QueryFetch<Self>`
-unsafe impl<T: Component, Pred: Predicate<T>> WorldQuery for Check<T, Pred> {
+unsafe impl<T, Pred: Predicate<T>> WorldQuery for Check<T, Pred>
+where
+    T: Checkable,
+    <T as Checkable>::Component: Component,
+{
     type ReadOnly = Self;
 
-    type State = CheckState<T>;
+    type State = CheckState<T::Component>;
 
     fn shrink<'wlong: 'wshort, 'wshort>(item: QueryItem<'wlong, Self>) -> QueryItem<'wshort, Self> {
         item
     }
 }
 
-impl<'w, T: Component, Pred: Predicate<T>> WorldQueryGats<'w> for Check<T, Pred> {
+impl<'w, T, Pred: Predicate<T>> WorldQueryGats<'w> for Check<T, Pred>
+where
+    T: Checkable,
+    <T as Checkable>::Component: Component,
+{
     type Fetch = CheckFetch<'w, T, Pred>;
-    type _State = CheckState<T>;
+    type _State = CheckState<T::Component>;
 }
 
 // SAFETY: read-only access
-unsafe impl<T: Component, Pred: Predicate<T>> ReadOnlyWorldQuery for Check<T, Pred> {}
+unsafe impl<T, Pred: Predicate<T>> ReadOnlyWorldQuery for Check<T, Pred>
+where
+    T: Checkable,
+    <T as Checkable>::Component: Component,
+{
+}
 
 /// The [`FetchState`] of [`Equals`].
 pub struct CheckState<T> {
@@ -54,17 +67,25 @@ impl<T: Component> FetchState for CheckState<T> {
 }
 
 /// The [`Fetch`] of [`Equals`].
-pub struct CheckFetch<'w, T, Pred> {
+pub struct CheckFetch<'w, T, Pred>
+where
+    T: Checkable,
+    <T as Checkable>::Component: Component,
+{
     pred_marker: PhantomData<Pred>,
     // T::Storage = TableStorage
-    table_components: Option<ThinSlicePtr<'w, UnsafeCell<T>>>,
+    table_components: Option<ThinSlicePtr<'w, UnsafeCell<T::Component>>>,
     entity_table_rows: Option<ThinSlicePtr<'w, usize>>,
     // T::Storage = SparseStorage
     entities: Option<ThinSlicePtr<'w, Entity>>,
     sparse_set: Option<&'w ComponentSparseSet>,
 }
 
-impl<T, Pred> Clone for CheckFetch<'_, T, Pred> {
+impl<T, Pred> Clone for CheckFetch<'_, T, Pred>
+where
+    T: Checkable,
+    <T as Checkable>::Component: Component,
+{
     fn clone(&self) -> Self {
         Self {
             pred_marker: PhantomData,
@@ -77,9 +98,14 @@ impl<T, Pred> Clone for CheckFetch<'_, T, Pred> {
 }
 
 // SAFETY: this reads the T component. archetype component access and component access are updated to reflect that
-unsafe impl<'w, T: Component, Pred: Predicate<T>> Fetch<'w> for CheckFetch<'w, T, Pred> {
+unsafe impl<'w, T, Pred> Fetch<'w> for CheckFetch<'w, T, Pred>
+where
+    T: Checkable,
+    <T as Checkable>::Component: Component,
+    Pred: Predicate<T>,
+{
     type Item = bool;
-    type State = CheckState<T>;
+    type State = CheckState<T::Component>;
 
     unsafe fn init(
         world: &'w World,
@@ -92,18 +118,20 @@ unsafe impl<'w, T: Component, Pred: Predicate<T>> Fetch<'w> for CheckFetch<'w, T
             table_components: None,
             entity_table_rows: None,
             entities: None,
-            sparse_set: (T::Storage::STORAGE_TYPE == StorageType::SparseSet).then(|| {
-                world
-                    .storages()
-                    .sparse_sets
-                    .get(state.component_id)
-                    .unwrap()
-            }),
+            sparse_set: (<<T as Checkable>::Component as Component>::Storage::STORAGE_TYPE
+                == StorageType::SparseSet)
+                .then(|| {
+                    world
+                        .storages()
+                        .sparse_sets
+                        .get(state.component_id)
+                        .unwrap()
+                }),
         }
     }
 
     const IS_DENSE: bool = {
-        match T::Storage::STORAGE_TYPE {
+        match <<T as Checkable>::Component as Component>::Storage::STORAGE_TYPE {
             StorageType::Table => true,
             StorageType::SparseSet => false,
         }
@@ -117,7 +145,7 @@ unsafe impl<'w, T: Component, Pred: Predicate<T>> Fetch<'w> for CheckFetch<'w, T
         archetype: &'w Archetype,
         tables: &'w Tables,
     ) {
-        match T::Storage::STORAGE_TYPE {
+        match <<T as Checkable>::Component as Component>::Storage::STORAGE_TYPE {
             StorageType::Table => {
                 self.entity_table_rows = Some(archetype.entity_table_rows().into());
                 let column = tables[archetype.table_id()]
@@ -140,7 +168,7 @@ unsafe impl<'w, T: Component, Pred: Predicate<T>> Fetch<'w> for CheckFetch<'w, T
     }
 
     unsafe fn archetype_fetch(&mut self, archetype_index: usize) -> Self::Item {
-        let item = match T::Storage::STORAGE_TYPE {
+        let item = match <<T as Checkable>::Component as Component>::Storage::STORAGE_TYPE {
             StorageType::Table => {
                 let (entity_table_rows, table_components) = self
                     .entity_table_rows
@@ -158,9 +186,10 @@ unsafe impl<'w, T: Component, Pred: Predicate<T>> Fetch<'w> for CheckFetch<'w, T
                 sparse_set
                     .get(entity)
                     .unwrap_or_else(|| debug_checked_unreachable())
-                    .deref::<T>()
+                    .deref()
             }
         };
+        let item = <T as Checkable>::get(item);
         Pred::test(item)
     }
 
@@ -169,6 +198,7 @@ unsafe impl<'w, T: Component, Pred: Predicate<T>> Fetch<'w> for CheckFetch<'w, T
             .table_components
             .unwrap_or_else(|| debug_checked_unreachable());
         let item = components.get(table_row).deref();
+        let item = <T as Checkable>::get(item);
         Pred::test(item)
     }
 
