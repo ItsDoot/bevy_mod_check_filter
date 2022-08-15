@@ -24,12 +24,9 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 quote! {
                     #vis struct #name;
 
-                    impl<T> bevy_mod_check_filter::Predicate<T> for #name
-                    where
-                        T: std::ops::Deref<Target = #enum_name>,
-                    {
-                        fn test(test: &T) -> bool {
-                            match **test {
+                    impl bevy_mod_check_filter::Predicate<#enum_name> for #name {
+                        fn test(test: &#enum_name) -> bool {
+                            match *test {
                               #m => true,
                               _ => false,
                             }
