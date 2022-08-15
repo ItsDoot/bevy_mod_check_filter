@@ -15,6 +15,7 @@ use bevy_ptr::{ThinSlicePtr, UnsafeCellDeref};
 
 use crate::{Check, Predicate};
 
+// SAFETY: `ROQueryFetch<Self>` is the same as `QueryFetch<Self>`
 unsafe impl<T: Component, Pred: Predicate<T>> WorldQuery for Check<T, Pred> {
     type ReadOnly = Self;
 
@@ -75,6 +76,7 @@ impl<T, Pred> Clone for CheckFetch<'_, T, Pred> {
     }
 }
 
+// SAFETY: this reads the T component. archetype component access and component access are updated to reflect that
 unsafe impl<'w, T: Component, Pred: Predicate<T>> Fetch<'w> for CheckFetch<'w, T, Pred> {
     type Item = bool;
     type State = CheckState<T>;
