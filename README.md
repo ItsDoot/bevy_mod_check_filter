@@ -12,7 +12,7 @@ Without `bevy_mod_check_filter`:
 struct Poisoned;
 
 #[derive(Component)]
-struct Name { name: &'static str };
+struct Name { name: &'static str }
 
 fn all_poisoned(entities: Query<&Name, With<Poisoned>>) {
     // ...
@@ -34,7 +34,7 @@ impl std::ops::Deref for Poisoned {
 }
 
 #[derive(Component)]
-struct Name { name: &'static str };
+struct Name { name: &'static str }
 
 fn all_poisoned(entities: Query<&Name, Check<Poisoned, Is<true>>>) {
     // ...

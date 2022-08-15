@@ -9,6 +9,8 @@ use std::{marker::PhantomData, ops::Deref};
 
 use bevy_ecs::component::Component;
 
+pub use bevy_mod_check_filter_macros::IsVariant;
+
 mod impls;
 
 /// Filter that selects entities with a component `T`, if the given [`Predicate`] is satisfied.
