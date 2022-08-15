@@ -17,4 +17,4 @@ members = ["bevy_mod_check_filter_macros"]
 [dependencies]
 bevy_ecs = "0.8"
 bevy_ptr = "0.8"
-bevy_mod_check_filter_macros = { path = "./bevy_mod_check_filter_macros" }
+bevy_mod_check_filter_macros = { path = "./bevy_mod_check_filter_macros", version = "0.2" }
