@@ -24,7 +24,7 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 quote! {
                     #vis struct #name;
 
-                    impl<T> Predicate<T> for #name
+                    impl<T> bevy_mod_check_filter::Predicate<T> for #name
                     where
                         T: std::ops::Deref<Target = #enum_name>,
                     {
