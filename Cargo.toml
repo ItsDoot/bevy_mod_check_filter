@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_check_filter"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 categories = ["game-engines"]
 description = "A module for improved ergonomics with Enabled-style marker components."
